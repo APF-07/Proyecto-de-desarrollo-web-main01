@@ -229,11 +229,11 @@ def eliminar_categoria(id_categoria):
 
 
 # =====================================================
-#   PROVEEDORES
+#   PROVEEDORES (ACTUALIZADO)
 # =====================================================
 
 def obtener_proveedores_todos():
-    """Obtiene todos los proveedores usando sp_ObtenerProveedores"""
+    """Obtiene todos los proveedores incluyendo el tipo de producto"""
     conn = get_connection()
     proveedores = []
     try:
@@ -246,20 +246,22 @@ def obtener_proveedores_todos():
                 "nombre": r.nombre,
                 "telefono": r.telefono,
                 "direccion": r.direccion,
-                "correo": r.correo
+                "correo": r.correo,
+                "tipo_producto": r.tipo_producto # <--- Nuevo campo
             })
     finally:
         conn.close()
     return proveedores
 
 
-def agregar_proveedor(nombre, telefono, direccion, correo):
-    """Agrega proveedor usando sp_AgregarProveedor"""
+def agregar_proveedor(nombre, telefono, direccion, correo, tipo_producto): # <--- Nuevo argumento
+    """Agrega proveedor con tipo de producto"""
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("EXEC sp_AgregarProveedor @nombre=?, @telefono=?, @direccion=?, @correo=?",
-                      (nombre, telefono, direccion, correo))
+        # Agregamos el parámetro @tipo_producto=?
+        cursor.execute("EXEC sp_AgregarProveedor @nombre=?, @telefono=?, @direccion=?, @correo=?, @tipo_producto=?",
+                      (nombre, telefono, direccion, correo, tipo_producto))
         conn.commit()
         return True
     except Exception as e:
@@ -270,7 +272,6 @@ def agregar_proveedor(nombre, telefono, direccion, correo):
 
 
 def obtener_proveedor_por_id(id_proveedor):
-    """Obtiene proveedor por ID usando sp_ObtenerProveedorPorId"""
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -285,21 +286,22 @@ def obtener_proveedor_por_id(id_proveedor):
             "nombre": r.nombre,
             "telefono": r.telefono,
             "direccion": r.direccion,
-            "correo": r.correo
+            "correo": r.correo,
+            "tipo_producto": r.tipo_producto # <--- Nuevo campo
         }
     finally:
         conn.close()
 
 
-def actualizar_proveedor(id_proveedor, nombre, telefono, direccion, correo):
-    """Actualiza proveedor usando sp_ActualizarProveedor"""
+def actualizar_proveedor(id_proveedor, nombre, telefono, direccion, correo, tipo_producto): # <--- Nuevo argumento
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        # Agregamos el parámetro @tipo_producto=?
         cursor.execute("""
             EXEC sp_ActualizarProveedor 
-                @id_proveedor=?, @nombre=?, @telefono=?, @direccion=?, @correo=?
-        """, (id_proveedor, nombre, telefono, direccion, correo))
+                @id_proveedor=?, @nombre=?, @telefono=?, @direccion=?, @correo=?, @tipo_producto=?
+        """, (id_proveedor, nombre, telefono, direccion, correo, tipo_producto))
         conn.commit()
         return True
     except Exception as e:
@@ -307,7 +309,6 @@ def actualizar_proveedor(id_proveedor, nombre, telefono, direccion, correo):
         return False
     finally:
         conn.close()
-
 
 def eliminar_proveedor(id_proveedor):
     """Elimina proveedor usando sp_EliminarProveedor"""
@@ -682,7 +683,8 @@ def obtener_productos_para_venta():
                 "id": r.id_producto,
                 "nombre": r.nombre,
                 "stock": float(r.stock_actual),
-                "precio": float(r.precio_unitario)
+                "precio": float(r.precio_unitario),
+                "imagen": r.imagen if r.imagen else None # <--- NUEVO: Capturamos la imagen
             }
             for r in cursor.fetchall()
         ]
@@ -691,49 +693,55 @@ def obtener_productos_para_venta():
 
 
 # =====================================================
-#   FUNCIONES PARA DASHBOARD
+#   FUNCIONES PARA DASHBOARD (COMPLETO)
 # =====================================================
 
 def obtener_total_productos():
-    """Obtiene el total de productos activos usando sp_ObtenerTotalProductos"""
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("EXEC sp_ObtenerTotalProductos")
-        return cursor.fetchone()[0]
+        row = cursor.fetchone()
+        return row[0] if row else 0
     finally:
         conn.close()
 
-
-def obtener_total_ventas():
-    """Obtiene el total de ventas registradas usando sp_ObtenerTotalVentas"""
+def obtener_total_ventas(fecha_inicio=None):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("EXEC sp_ObtenerTotalVentas")
-        return cursor.fetchone()[0]
+        cursor.execute("EXEC sp_ObtenerTotalVentas @fecha_inicio=?", (fecha_inicio,))
+        row = cursor.fetchone()
+        return row[0] if row else 0
     finally:
         conn.close()
 
+def obtener_total_ingresos(fecha_inicio=None):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("EXEC sp_ObtenerTotalIngresos @fecha_inicio=?", (fecha_inicio,))
+        row = cursor.fetchone()
+        val = row[0] if row else 0
+        return float(val) if val else 0.0
+    finally:
+        conn.close()
 
 def obtener_total_clientes():
-    """Obtiene el total de clientes usando sp_ObtenerTotalClientes"""
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("EXEC sp_ObtenerTotalClientes")
-        return cursor.fetchone()[0]
+        row = cursor.fetchone()
+        return row[0] if row else 0
     finally:
         conn.close()
 
-
 def obtener_ventas_ultimos_meses(meses=6):
-    """Obtiene ventas de los últimos N meses usando sp_ObtenerVentasUltimosMeses"""
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("EXEC sp_ObtenerVentasUltimosMeses @meses=?", (meses,))
-        
         resultados = []
         for row in cursor.fetchall():
             resultados.append({
@@ -742,20 +750,14 @@ def obtener_ventas_ultimos_meses(meses=6):
                 "total_ventas": float(row.total_ventas)
             })
         return resultados
-    except Exception as e:
-        print("Error en obtener_ventas_ultimos_meses:", e)
-        return []
     finally:
         conn.close()
 
-
-def obtener_productos_mas_vendidos(limite=5):
-    """Obtiene los productos más vendidos usando sp_ObtenerProductosMasVendidos"""
+def obtener_productos_mas_vendidos(limite=5, fecha_inicio=None):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("EXEC sp_ObtenerProductosMasVendidos @limite=?", (limite,))
-        
+        cursor.execute("EXEC sp_ObtenerProductosMasVendidos @limite=?, @fecha_inicio=?", (limite, fecha_inicio))
         resultados = []
         for row in cursor.fetchall():
             resultados.append({
@@ -764,20 +766,15 @@ def obtener_productos_mas_vendidos(limite=5):
                 "total_ingresos": float(row.total_ingresos)
             })
         return resultados
-    except Exception as e:
-        print("Error en obtener_productos_mas_vendidos:", e)
-        return []
     finally:
         conn.close()
 
-
+# ESTA ES LA FUNCIÓN QUE FALTABA Y CAUSABA EL ERROR:
 def obtener_productos_stock_bajo():
-    """Obtiene productos con stock bajo el mínimo usando sp_ObtenerProductosStockBajo"""
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("EXEC sp_ObtenerProductosStockBajo")
-        
         resultados = []
         for row in cursor.fetchall():
             resultados.append({
@@ -792,8 +789,8 @@ def obtener_productos_stock_bajo():
         return []
     finally:
         conn.close()
-        
-# ... (código anterior de productos, ventas, etc.) ...
+
+
 
 # =====================================================
 #   SEGURIDAD Y USUARIOS (LOGIN)
@@ -833,5 +830,18 @@ def obtener_usuario_por_id(id_usuario):
         if row:
             return User(row.id_usuario, row.nombre, row.correo, row.rol, row.contraseña)
         return None
+    finally:
+        conn.close()
+        
+def actualizar_perfil_usuario(id_usuario, nombre, correo, password):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("EXEC sp_ActualizarUsuario @id_usuario=?, @nombre=?, @correo=?, @password=?", 
+                      (id_usuario, nombre, correo, password))
+        conn.commit()
+        return True, "Perfil actualizado correctamente."
+    except Exception as e:
+        return False, str(e)
     finally:
         conn.close()

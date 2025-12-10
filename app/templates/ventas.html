@@ -181,20 +181,39 @@
                     <table class="table table-hover align-middle">
                         <thead class="bg-light">
                             <tr>
-                                <th>Nombre</th>
-                                <th>Teléfono</th>
+                                <th>Cliente</th> <th>Contacto</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in clientes %}
                             <tr>
-                                <td class="fw-bold">{{ c.nombre }}</td>
-                                <td>{{ c.telefono }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% set colors = ['#0dcaf0', '#0d6efd', '#20c997', '#6610f2', '#d63384'] %}
+                                        {% set color = colors[c.id % 5] %}
+                                        
+                                        <div class="avatar-circle" style="background-color: {{ color }};">
+                                            {{ c.nombre[:2] }}
+                                        </div>
+                                        <div>
+                                            <span class="fw-bold text-dark d-block">{{ c.nombre }}</span>
+                                            <small class="text-muted">ID: {{ c.id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column small">
+                                        <span><i class="bi bi-telephone me-1"></i> {{ c.telefono }}</span>
+                                        <span class="text-muted">{{ c.direccion }}</span>
+                                    </div>
+                                </td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-primary rounded-pill px-3" onclick="seleccionarClienteDesdeLista('{{ c.id }}', '{{ c.nombre }}')">
-                                        Vender
+                                    <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" onclick="seleccionarClienteDesdeLista('{{ c.id }}', '{{ c.nombre }}')">
+                                        <i class="bi bi-cart-plus me-1"></i> Vender
                                     </button>
+                                    <a href="{{ url_for('main.editar_cliente', id=c.id) }}" class="btn btn-sm btn-light text-warning ms-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                                    <a href="{{ url_for('main.eliminar_cliente', id=c.id) }}" class="btn btn-sm btn-light text-danger" title="Eliminar" onclick="return confirm('¿Eliminar cliente?')"><i class="bi bi-trash"></i></a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -202,8 +221,14 @@
                     </table>
                     {% else %}
                     <div class="text-center py-5">
-                        <p class="text-muted">No hay clientes registrados</p>
-                        <a href="{{ url_for('main.nuevo_cliente') }}" class="btn btn-primary">Crear Cliente</a>
+                        <div class="mb-3 text-muted opacity-50">
+                            <i class="bi bi-person-badge display-4"></i>
+                        </div>
+                        <h5 class="text-muted">No hay clientes registrados</h5>
+                        <p class="text-muted small">Registra clientes para agilizar tus ventas.</p>
+                        <a href="{{ url_for('main.nuevo_cliente') }}" class="btn btn-primary rounded-pill">
+                            <i class="bi bi-person-plus me-2"></i> Crear Cliente
+                        </a>
                     </div>
                     {% endif %}
                 </div>
@@ -221,21 +246,78 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarProductos();
 });
 
+// Función corregida (tenía un error de dedo "unction")
 function cargarProductos() {
     fetch('/api/productos_venta')
         .then(response => response.json())
         .then(data => {
             productosDisponibles = data;
-            const select = $('#producto_select'); // Usando jQuery para Select2
+            const select = $('#producto_select'); // Select2
+            
+            // Limpiamos y ponemos el placeholder
             select.empty();
-            select.append('<option value="">Buscar por nombre...</option>');
+            select.append('<option value="">Buscar producto...</option>');
             
             data.forEach(p => {
-                select.append(new Option(`${p.nombre} - Stock: ${p.stock} - S/. ${p.precio}`, p.id, false, false));
+                // Preparamos la ruta de la imagen
+                // Asegúrate que las imágenes estén en app/static/img/
+                let imgUrl = p.imagen ? `/static/img/${p.imagen}` : null;
+                
+                // Creamos la opción y guardamos los datos en atributos data-
+                let option = new Option(p.nombre, p.id, false, false);
+                $(option).attr('data-precio', p.precio);
+                $(option).attr('data-stock', p.stock);
+                $(option).attr('data-img', imgUrl); // Guardamos la URL
+                
+                select.append(option);
             });
-            // Guardar data en atributos para acceso rápido si es necesario, 
-            // aunque mejor buscar en el array por ID
+
+            // Inicializamos Select2 con plantilla personalizada
+            select.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Escribe para buscar...',
+                templateResult: formatProducto, // Función para diseñar la lista
+                templateSelection: formatProductoSeleccionado // Función para lo que queda seleccionado
+            });
         });
+}
+
+// Función para diseñar cada opción de la lista (CON FOTO)
+function formatProducto(opt) {
+    if (!opt.id) return opt.text; // Placeholder
+    
+    let imgUrl = $(opt.element).attr('data-img');
+    let stock = $(opt.element).attr('data-stock');
+    let precio = parseFloat($(opt.element).attr('data-precio')).toFixed(2);
+    
+    // Si tiene imagen la usamos, si no, un icono genérico
+    let imgHtml = imgUrl 
+        ? `<img src="${imgUrl}" class="rounded shadow-sm border" style="width: 45px; height: 45px; object-fit: cover; margin-right: 10px;">`
+        : `<div class="rounded bg-light border d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; margin-right: 10px;"><i class="bi bi-image text-muted"></i></div>`;
+
+    // Estructura HTML bonita
+    let $opt = $(
+        `<div class="d-flex align-items-center py-1">
+            ${imgHtml}
+            <div class="flex-grow-1" style="line-height: 1.2;">
+                <div class="fw-bold text-dark">${opt.text}</div>
+                <div class="d-flex justify-content-between small mt-1">
+                    <span class="badge bg-light text-dark border">Stock: ${stock}</span>
+                    <span class="text-primary fw-bold fs-6">S/. ${precio}</span>
+                </div>
+            </div>
+        </div>`
+    );
+    return $opt;
+}
+
+// Función para mostrar la opción cuando ya la seleccionaste (Versión compacta)
+function formatProductoSeleccionado(opt) {
+    if (!opt.id) return opt.text;
+    let stock = $(opt.element).attr('data-stock');
+    let precio = parseFloat($(opt.element).attr('data-precio')).toFixed(2);
+    return $(`<span>${opt.text} <small class="text-muted ms-2">(Stock: ${stock})</small> <strong class="text-primary ms-2">S/. ${precio}</strong></span>`);
 }
 
 function agregarProducto() {

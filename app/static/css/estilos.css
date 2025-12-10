@@ -134,3 +134,59 @@ body, html {
     background-color: #78c2ad;
     border-color: #78c2ad;
   }
+
+  /* --- AVATARES CON INICIALES --- */
+.avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    margin-right: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    flex-shrink: 0; /* Evita que se aplaste */
+}
+
+/* --- AJUSTES MODO OSCURO --- */
+[data-bs-theme="dark"] body {
+    background-color: #121212 !important; /* Fondo más oscuro */
+}
+
+/* Ajustes para la Sidebar en modo oscuro */
+[data-bs-theme="dark"] .sidebar {
+    background: #0d1f1a; /* Verde aún más oscuro y elegante */
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Tarjetas y Header en modo oscuro */
+[data-bs-theme="dark"] .card, 
+[data-bs-theme="dark"] .topbar,
+[data-bs-theme="dark"] .user-badge {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0;
+    border-color: #333;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: #e0e0e0 !important; /* Texto blanco suave */
+}
+
+[data-bs-theme="dark"] .table {
+    color: #e0e0e0;
+    border-color: #333;
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+    color: #fff;
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* Ajuste suave para transiciones de color */
+body, .card, .topbar, .sidebar, .btn, input, table {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}

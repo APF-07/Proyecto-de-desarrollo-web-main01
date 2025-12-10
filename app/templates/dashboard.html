@@ -1,98 +1,89 @@
 {% extends "base.html" %}
 {% block content %}
 
-<style>
-    .stats-card {
-        border-radius: 15px;
-        transition: transform 0.3s;
-        border: none;
-    }
-    .stats-card:hover {
-        transform: translateY(-5px);
-    }
-    .icon-box {
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255,255,255,0.25);
-        border-radius: 12px;
-        backdrop-filter: blur(5px);
-    }
-</style>
-
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
-        <div>
-            <h3 class="fw-bold text-primary">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 fade-in-up">
+        <div class="mb-3 mb-md-0">
+            <h3 class="fw-bold text-primary mb-1">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </h3>
-            <p class="text-muted mb-0">Resumen general de tu negocio</p>
+            <p class="text-muted mb-0">Resumen de negocio: <strong class="text-dark">{{ datos.titulo_periodo }}</strong></p>
         </div>
-        <div class="badge bg-light text-primary p-2 border border-primary">
-            <i class="bi bi-calendar-event me-1"></i> {{ datos.fecha_actual|default('Hoy') }}
+        
+        <div class="btn-group shadow-sm" role="group">
+            <a href="{{ url_for('main.dashboard', periodo='hoy') }}" 
+               class="btn btn-outline-primary {{ 'active' if datos.periodo_actual == 'hoy' }}">Hoy</a>
+            <a href="{{ url_for('main.dashboard', periodo='semana') }}" 
+               class="btn btn-outline-primary {{ 'active' if datos.periodo_actual == 'semana' }}">7 Días</a>
+            <a href="{{ url_for('main.dashboard', periodo='mes') }}" 
+               class="btn btn-outline-primary {{ 'active' if datos.periodo_actual == 'mes' }}">Este Mes</a>
+            <a href="{{ url_for('main.dashboard', periodo='historico') }}" 
+               class="btn btn-outline-primary {{ 'active' if datos.periodo_actual == 'historico' }}">Histórico</a>
         </div>
     </div>
 
     <div class="row mb-4 fade-in-up">
-        <div class="col-md-4 mb-3">
-            <div class="card stats-card bg-primary text-white shadow-lg">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-white-50 mb-1 text-uppercase fw-bold">Productos Activos</h6>
-                            <h2 class="mb-0 fw-bold display-6">{{ datos.total_productos }}</h2>
-                        </div>
-                        <div class="icon-box">
-                            <i class="bi bi-box-seam fs-1"></i>
-                        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-bold text-white-50 small">INGRESOS (S/.)</div>
+                        <i class="bi bi-currency-dollar fs-4 text-white-50"></i>
                     </div>
+                    <h3 class="mb-0 fw-bold">S/. {{ "%.2f"|format(datos.total_ingresos) }}</h3>
+                    <small class="text-white-50">En este periodo</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-bold text-white-50 small">VENTAS REALIZADAS</div>
+                        <i class="bi bi-receipt fs-4 text-white-50"></i>
+                    </div>
+                    <h3 class="mb-0 fw-bold">{{ datos.total_ventas }}</h3>
+                    <small class="text-white-50">Transacciones</small>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-4 mb-3">
-            <div class="card stats-card bg-success text-white shadow-lg">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-white-50 mb-1 text-uppercase fw-bold">Total Ventas</h6>
-                            <h2 class="mb-0 fw-bold display-6">{{ datos.total_ventas }}</h2>
-                        </div>
-                        <div class="icon-box">
-                            <i class="bi bi-graph-up-arrow fs-1"></i>
-                        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-bold text-white-50 small">CLIENTES</div>
+                        <i class="bi bi-people-fill fs-4 text-white-50"></i>
                     </div>
+                    <h3 class="mb-0 fw-bold">{{ datos.total_clientes }}</h3>
+                    <small class="text-white-50">Registrados</small>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4 mb-3">
-            <div class="card stats-card bg-info text-white shadow-lg">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-white-50 mb-1 text-uppercase fw-bold">Clientes</h6>
-                            <h2 class="mb-0 fw-bold display-6">{{ datos.total_clientes }}</h2>
-                        </div>
-                        <div class="icon-box">
-                            <i class="bi bi-people-fill fs-1"></i>
-                        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow bg-secondary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-bold text-white-50 small">INVENTARIO</div>
+                        <i class="bi bi-box-seam fs-4 text-white-50"></i>
                     </div>
+                    <h3 class="mb-0 fw-bold">{{ datos.total_productos }}</h3>
+                    <small class="text-white-50">Productos activos</small>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        {% if datos.ventas_por_mes %}
         <div class="col-lg-8 mb-4 fade-in-up" style="animation-delay: 0.1s;">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-4 px-4">
-                    <h5 class="mb-0 fw-bold text-primary">
-                        <i class="bi bi-bar-chart-fill me-2"></i>Ventas por Mes
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Tendencia de Ventas
                     </h5>
+                    <small class="text-muted">Comportamiento últimos 6 meses</small>
                 </div>
                 <div class="card-body px-4 pb-4">
                     <div style="height: 300px;">
@@ -101,46 +92,51 @@
                 </div>
             </div>
         </div>
-        {% endif %}
 
-        {% if datos.productos_mas_vendidos %}
         <div class="col-lg-4 mb-4 fade-in-up" style="animation-delay: 0.2s;">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-4 px-4">
-                    <h5 class="mb-0 fw-bold text-success">
-                        <i class="bi bi-pie-chart-fill me-2"></i>Top Productos
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-trophy-fill me-2 text-warning"></i>Top Productos
                     </h5>
+                    <small class="text-muted">Más vendidos en: <strong>{{ datos.titulo_periodo }}</strong></small>
                 </div>
-                <div class="card-body d-flex align-items-center justify-content-center">
-                    <div style="height: 250px; width: 100%;">
-                        <canvas id="graficaProductos"></canvas>
-                    </div>
+                <div class="card-body d-flex flex-column justify-content-center">
+                    {% if datos.productos_mas_vendidos %}
+                        <div style="height: 250px; width: 100%;">
+                            <canvas id="graficaProductos"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-calendar-x fs-1 opacity-25"></i>
+                            <p class="mt-2">No hay ventas en este periodo</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% endif %}
 
         <div class="col-12 mb-4 fade-in-up" style="animation-delay: 0.3s;">
-            <div class="card shadow-sm border-warning">
-                <div class="card-header bg-warning bg-opacity-10 border-warning d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-warning-emphasis fw-bold">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-danger bg-opacity-10 border-0 d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 text-danger fw-bold">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                         Alertas de Stock Bajo
                     </h5>
                     {% if datos.stock_bajo %}
-                    <span class="badge bg-warning text-dark rounded-pill">{{ datos.stock_bajo|length }} productos</span>
+                    <span class="badge bg-danger rounded-pill">{{ datos.stock_bajo|length }} productos</span>
                     {% endif %}
                 </div>
                 <div class="card-body p-0">
                     {% if datos.stock_bajo %}
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
+                            <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4">Producto</th>
                                     <th class="text-center">Stock Actual</th>
-                                    <th class="text-center">Mínimo Requerido</th>
-                                    <th class="text-end pe-4">Estado</th>
+                                    <th class="text-center">Mínimo</th>
+                                    <th class="text-end pe-4">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -153,8 +149,8 @@
                                     <td class="text-center text-muted">{{ producto.stock_minimo }}</td>
                                     <td class="text-end pe-4">
                                         <a href="{{ url_for('main.reabastecer_inventario') }}?producto_id={{ producto.id_producto }}" 
-                                           class="btn btn-sm btn-outline-warning">
-                                            <i class="bi bi-plus-circle"></i> Reabastecer
+                                           class="btn btn-sm btn-outline-danger">
+                                            Reabastecer
                                         </a>
                                     </td>
                                 </tr>
@@ -163,10 +159,9 @@
                         </table>
                     </div>
                     {% else %}
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-check-circle-fill text-success display-4 mb-3"></i>
-                        <h5>¡Todo en orden!</h5>
-                        <p class="mb-0">No hay productos con stock crítico.</p>
+                    <div class="text-center py-4 text-success">
+                        <i class="bi bi-check-circle-fill fs-3 mb-2"></i>
+                        <p class="mb-0 fw-bold">¡Inventario saludable!</p>
                     </div>
                     {% endif %}
                 </div>
@@ -178,69 +173,48 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-// Configuración de colores del tema Minty
+// Colores de gráfica
 const themeColors = {
-    primary: '#78C2AD',   // Verde Minty
-    secondary: '#F3969A', // Salmón
-    success: '#56CC9D',   // Verde Intenso
-    info: '#6CC3D5',      // Cyan
-    warning: '#FFCE67',   // Amarillo
-    danger: '#FF7851',    // Naranja
-    gray: '#E8EAEC'
+    primary: '#78C2AD',
+    secondary: '#F3969A',
+    success: '#56CC9D',
+    info: '#6CC3D5',
+    warning: '#FFCE67',
+    danger: '#FF7851'
 };
 
-// Gráfica de Ventas
+// 1. Gráfica de Tendencia (Ventas/Mes)
 {% if datos.ventas_por_mes %}
 const ctxVentas = document.getElementById('graficaVentas');
 if (ctxVentas) {
     new Chart(ctxVentas, {
-        type: 'line', // Cambiamos a línea para ver tendencias mejor
+        type: 'line',
         data: {
             labels: {{ datos.ventas_por_mes | map(attribute='mes') | list | tojson }},
             datasets: [{
-                label: 'Ventas (S/)',
+                label: 'Ventas (S/.)',
                 data: {{ datos.ventas_por_mes | map(attribute='total_ventas') | list | tojson }},
-                backgroundColor: 'rgba(120, 194, 173, 0.2)', // Minty transparente
+                backgroundColor: 'rgba(120, 194, 173, 0.1)',
                 borderColor: themeColors.primary,
-                borderWidth: 3,
+                borderWidth: 2,
                 pointBackgroundColor: '#fff',
                 pointBorderColor: themeColors.primary,
-                pointBorderWidth: 2,
-                pointRadius: 6,
+                pointRadius: 4,
                 fill: true,
-                tension: 0.4 // Curvas suaves
+                tension: 0.3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(26, 60, 52, 0.9)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            return ' S/. ' + context.parsed.y.toFixed(2);
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { borderDash: [5, 5], color: '#f0f0f0' },
-                    ticks: { callback: value => 'S/. ' + value }
-                },
-                x: { grid: { display: false } }
-            }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { borderDash: [5] } }, x: { grid: { display: false } } }
         }
     });
 }
 {% endif %}
 
-// Gráfica de Productos (Doughnut)
+// 2. Gráfica de Productos Más Vendidos (Doughnut)
 {% if datos.productos_mas_vendidos %}
 const ctxProductos = document.getElementById('graficaProductos');
 if (ctxProductos) {
@@ -251,23 +225,19 @@ if (ctxProductos) {
             datasets: [{
                 data: {{ datos.productos_mas_vendidos | map(attribute='total_vendido') | list | tojson }},
                 backgroundColor: [
-                    themeColors.primary,
-                    themeColors.secondary,
-                    themeColors.info,
-                    themeColors.warning,
-                    themeColors.danger,
-                    themeColors.success
+                    themeColors.primary, themeColors.secondary, themeColors.info, 
+                    themeColors.warning, themeColors.danger
                 ],
                 borderWidth: 0,
-                hoverOffset: 10
+                hoverOffset: 15
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '70%', // Dona más fina
+            cutout: '75%',
             plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, padding: 15 } }
             }
         }
     });

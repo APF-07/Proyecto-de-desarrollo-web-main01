@@ -59,8 +59,14 @@ def inicio():
 @main_bp.route('/productos')
 @login_required
 def listar_productos():
+    # Obtenemos productos Y categorías
     productos = models.obtener_productos()
-    return render_template('productos.html', productos=productos, page_title="Productos")
+    categorias = models.obtener_categorias() # <--- AGREGAR ESTA LÍNEA
+    
+    return render_template('productos.html', 
+                         productos=productos, 
+                         categorias=categorias, # <--- PASARLAS AL TEMPLATE
+                         page_title="Productos")
 
 # ==========================
 # Eliminar producto
@@ -148,7 +154,9 @@ def nuevo_proveedor():
         telefono = request.form['telefono']
         direccion = request.form['direccion']
         correo = request.form['correo']
-        if models.agregar_proveedor(nombre, telefono, direccion, correo):
+        tipo_producto = request.form['tipo_producto'] # <--- Capturar nuevo dato
+        
+        if models.agregar_proveedor(nombre, telefono, direccion, correo, tipo_producto):
             flash("✅ Proveedor agregado correctamente.")
         else:
             flash("❌ Error al agregar proveedor.")
@@ -168,7 +176,9 @@ def editar_proveedor(id):
         telefono = request.form['telefono']
         direccion = request.form['direccion']
         correo = request.form['correo']
-        if models.actualizar_proveedor(id, nombre, telefono, direccion, correo):
+        tipo_producto = request.form['tipo_producto'] # <--- Capturar nuevo dato
+        
+        if models.actualizar_proveedor(id, nombre, telefono, direccion, correo, tipo_producto):
             flash("✅ Proveedor actualizado correctamente.")
         else:
             flash("❌ Error al actualizar proveedor.")
@@ -340,19 +350,50 @@ def eliminar_cliente(id):
 #   DASHBOARD
 # =====================================================
 
+# Importa timedelta para calcular fechas
+from datetime import datetime, timedelta 
+
 @main_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Dashboard con gráficas del sistema"""
-    # Datos para las gráficas usando procedimientos almacenados
+    """Dashboard con filtros de tiempo"""
+    
+    # 1. Obtener el filtro de la URL (por defecto 'historico')
+    periodo = request.args.get('periodo', 'historico')
+    fecha_inicio = None
+    titulo_periodo = "Histórico Total"
+
+    # 2. Calcular la fecha de inicio según el filtro
+    now = datetime.now()
+    
+    if periodo == 'hoy':
+        # Desde hoy a las 00:00:00
+        fecha_inicio = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        titulo_periodo = "Ventas de Hoy"
+        
+    elif periodo == 'semana':
+        # Últimos 7 días
+        fecha_inicio = now - timedelta(days=7)
+        titulo_periodo = "Últimos 7 Días"
+        
+    elif periodo == 'mes':
+        # Primer día de este mes
+        fecha_inicio = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        titulo_periodo = "Este Mes"
+
+    # 3. Consultar datos con el filtro aplicado
     datos = {
-        "total_productos": models.obtener_total_productos(),
-        "total_ventas": models.obtener_total_ventas(),
+        "periodo_actual": periodo,
+        "titulo_periodo": titulo_periodo,
+        "total_productos": models.obtener_total_productos(), # Inventario no cambia por fechas
+        "total_ventas": models.obtener_total_ventas(fecha_inicio),
+        "total_ingresos": models.obtener_total_ingresos(fecha_inicio), # ¡Nuevo dato!
         "total_clientes": models.obtener_total_clientes(),
-        "ventas_por_mes": models.obtener_ventas_ultimos_meses(6),
-        "productos_mas_vendidos": models.obtener_productos_mas_vendidos(5),
+        "ventas_por_mes": models.obtener_ventas_ultimos_meses(6), # Tendencia se mantiene fija
+        "productos_mas_vendidos": models.obtener_productos_mas_vendidos(5, fecha_inicio), # Top cambia según fecha
         "stock_bajo": models.obtener_productos_stock_bajo()
     }
+    
     return render_template("dashboard.html", datos=datos, page_title="Dashboard")
 
 # =====================================================
@@ -410,7 +451,7 @@ import os
 @main_bp.route("/api/ventas/<int:id>/pdf/boleta")
 @login_required
 def generar_pdf_boleta(id):
-    """Genera PDF con formato de boleta de venta"""
+    """Genera PDF con formato profesional de boleta de venta"""
     try:
         venta, detalles = models.obtener_venta_por_id(id)
         if not venta:
@@ -420,127 +461,159 @@ def generar_pdf_boleta(id):
         pdf = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
         
-        pdf.setTitle(f"Boleta Venta #{venta['id']}")
+        pdf.setTitle(f"Boleta Electronica {venta['id']}")
         
-        # Logo (opcional)
+        # --- ENCABEZADO ---
+        
+        # 1. LOGO (Lado Izquierdo)
         try:
-            logo_path = os.path.join(os.path.dirname(__file__), 'static', 'img', 'logo.png')
+            # Buscamos logo.jpg en la carpeta static/img
+            logo_path = os.path.join(os.path.dirname(__file__), 'static', 'img', 'logo.jpg')
+            
             if os.path.exists(logo_path):
-                logo = ImageReader(logo_path)
-                pdf.drawImage(logo, 50, height - 100, width=50, height=50)
-        except:
-            pass  # Si no hay logo, continuar sin él
-        
-        # Encabezado de boleta
-        pdf.setFont("Helvetica-Bold", 18)
-        pdf.drawCentredString(width/2, height - 60, "BOLETA DE VENTA")
-        
-        pdf.setFont("Helvetica", 10)
-        pdf.drawCentredString(width/2, height - 80, f"Venta #: {venta['id']}")
-        pdf.drawCentredString(width/2, height - 95, f"Fecha: {venta['fecha']}")
-        
-        # Información del cliente
-        y_position = height - 130
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(50, y_position, "Cliente:")
-        pdf.setFont("Helvetica", 10)
-        pdf.drawString(100, y_position, venta['cliente'])
-        
-        y_position -= 20
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(50, y_position, "Tipo de Venta:")
-        pdf.setFont("Helvetica", 10)
-        pdf.drawString(140, y_position, venta['tipo'])
-        
-        # Línea separadora
-        y_position -= 20
-        pdf.line(50, y_position, width - 50, y_position)
-        y_position -= 30
-        
-        # Detalles de productos
+                # Dibuja el logo: (x, y, ancho, alto)
+                # Ajustamos un poco el tamaño para que se vea bien
+                pdf.drawImage(logo_path, 40, height - 110, width=100, height=60, mask='auto', preserveAspectRatio=True)
+            else:
+                print("Nota: No se encontró el archivo logo.jpg en static/img")
+        except Exception as e:
+            print(f"Error cargando logo: {e}")
+
+        # 2. DATOS DE LA EMPRESA (Debajo/Al lado del logo)
         pdf.setFont("Helvetica-Bold", 14)
-        pdf.drawString(50, y_position, "DETALLE DE PRODUCTOS")
-        y_position -= 25
+        pdf.drawString(150, height - 60, "CEREAL SIERRA") 
         
-        # Encabezados de tabla
-        pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(50, y_position, "Producto")
-        pdf.drawString(300, y_position, "Cantidad")
-        pdf.drawString(370, y_position, "Precio Unit.")
-        pdf.drawString(470, y_position, "Subtotal")
+        pdf.setFont("Helvetica-Oblique", 10)
+        pdf.drawString(150, height - 72, "Alimentos de Altura") # Slogan del logo
         
-        y_position -= 15
-        pdf.line(50, y_position, width - 50, y_position)
-        y_position -= 10
-        
-        # Detalles de productos
         pdf.setFont("Helvetica", 9)
+        pdf.drawString(40, height - 125, "Av. Los Andes 123, Pasco - Perú")
+        pdf.drawString(40, height - 137, "Telf: (063) 421-500 | contacto@cerealsierra.com")
+        
+        # 3. CUADRO RUC (Lado Derecho - Estilo SUNAT)
+        # Marco del cuadro
+        pdf.setStrokeColorRGB(0.5, 0.5, 0.5)
+        pdf.setLineWidth(1)
+        pdf.rect(width - 210, height - 115, 170, 75, fill=0)
+        
+        # Título del documento (Fondo gris)
+        pdf.setFillColorRGB(0.9, 0.9, 0.9)
+        pdf.rect(width - 210, height - 90, 170, 25, fill=1, stroke=1)
+        
+        # Textos del cuadro
+        pdf.setFillColorRGB(0, 0, 0)
+        pdf.setFont("Helvetica-Bold", 14)
+        pdf.drawCentredString(width - 125, height - 60, "R.U.C. 20601234567") # RUC Ficticio
+        
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawCentredString(width - 125, height - 83, "BOLETA DE VENTA")
+        
+        pdf.setFont("Helvetica", 12)
+        # Número formateado (ej: 000123)
+        pdf.drawCentredString(width - 125, height - 105, f"N° 001 - {str(venta['id']).zfill(6)}")
+
+        # --- DATOS DEL CLIENTE ---
+        y_info = height - 170
+        
+        # Fecha
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, y_info, "Fecha de Emisión:")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(140, y_info, venta['fecha'])
+        
+        # Cliente
+        y_info -= 15
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, y_info, "Señor(es):")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(140, y_info, venta['cliente'])
+        
+        # Moneda
+        y_info -= 15
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, y_info, "Moneda:")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(140, y_info, "SOLES")
+
+        # --- TABLA DE PRODUCTOS ---
+        y_header = y_info - 30
+        
+        # Encabezado Negro
+        pdf.setFillColorRGB(0.2, 0.2, 0.2)
+        pdf.rect(40, y_header - 5, width - 80, 20, fill=1, stroke=0)
+        
+        # Textos Blancos
+        pdf.setFillColorRGB(1, 1, 1)
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(50, y_header + 2, "CANT.")
+        pdf.drawString(100, y_header + 2, "DESCRIPCIÓN")
+        pdf.drawRightString(450, y_header + 2, "P. UNIT")
+        pdf.drawRightString(530, y_header + 2, "IMPORTE")
+        
+        pdf.setFillColorRGB(0, 0, 0) # Volver a negro
+        
+        y_rows = y_header - 25
         total_venta = 0
         
+        pdf.setFont("Helvetica", 9)
+        
         for detalle in detalles:
-            if y_position < 100:  # Nueva página si se acaba el espacio
+            # Control de salto de página
+            if y_rows < 100:
                 pdf.showPage()
-                y_position = height - 50
-                pdf.setFont("Helvetica-Bold", 10)
-                pdf.drawString(50, y_position, "Producto")
-                pdf.drawString(300, y_position, "Cantidad")
-                pdf.drawString(370, y_position, "Precio Unit.")
-                pdf.drawString(470, y_position, "Subtotal")
-                y_position -= 20
-                pdf.line(50, y_position, width - 50, y_position)
-                y_position -= 10
-                pdf.setFont("Helvetica", 9)
+                y_rows = height - 50
             
-            # Producto (con wrap de texto si es muy largo)
-            producto = detalle['producto']
-            if len(producto) > 40:
-                producto = producto[:37] + "..."
-            pdf.drawString(50, y_position, producto)
-            pdf.drawString(300, y_position, str(detalle['cantidad']))
-            pdf.drawString(370, y_position, f"S/. {detalle['precio_unitario']:.2f}")
-            pdf.drawString(470, y_position, f"S/. {detalle['subtotal']:.2f}")
-            y_position -= 15
+            nombre = detalle['producto']
+            if len(nombre) > 50: nombre = nombre[:47] + "..."
+            
+            pdf.drawString(50, y_rows, str(detalle['cantidad']))
+            pdf.drawString(100, y_rows, nombre)
+            
+            # Precios alineados a la DERECHA
+            pdf.drawRightString(450, y_rows, f"{detalle['precio_unitario']:.2f}")
+            pdf.drawRightString(530, y_rows, f"{detalle['subtotal']:.2f}")
+            
+            # Línea separadora gris suave
+            pdf.setStrokeColorRGB(0.9, 0.9, 0.9)
+            pdf.line(40, y_rows - 5, width - 40, y_rows - 5)
+            
             total_venta += detalle['subtotal']
+            y_rows -= 20
+
+        # --- TOTAL FINAL ---
+        y_total = y_rows - 10
         
-        # Total
-        y_position -= 10
-        pdf.line(400, y_position, width - 50, y_position)
-        y_position -= 15
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(400, y_position, "TOTAL:")
-        pdf.drawString(470, y_position, f"S/. {total_venta:.2f}")
+        # Cuadro de Total
+        pdf.setStrokeColorRGB(0, 0, 0)
+        pdf.rect(350, y_total - 20, 200, 25, fill=0)
         
-        # Observaciones
-        y_position -= 30
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(360, y_total - 13, "TOTAL A PAGAR:")
+        pdf.drawRightString(540, y_total - 13, f"S/ {total_venta:.2f}")
+
+        # --- PIE DE PÁGINA ---
         if venta['observaciones']:
-            pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(50, y_position, "Observaciones:")
-            pdf.setFont("Helvetica", 9)
-            pdf.drawString(50, y_position - 15, venta['observaciones'])
-            y_position -= 30
-        
-        # Mensaje de agradecimiento y pie de página
-        y_position -= 20
-        pdf.setFont("Helvetica-Oblique", 10)
-        pdf.drawCentredString(width/2, y_position, "¡Gracias por su compra!")
-        
-        y_position -= 20
+            pdf.setFont("Helvetica-Oblique", 8)
+            pdf.drawString(40, y_total - 40, f"Observaciones: {venta['observaciones']}")
+
         pdf.setFont("Helvetica", 8)
-        pdf.drawCentredString(width/2, y_position, f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-        
+        pdf.drawCentredString(width/2, 50, "¡Gracias por su compra!")
+        pdf.drawCentredString(width/2, 40, "Cereal Sierra - Calidad garantizada")
+
         pdf.save()
         buffer.seek(0)
         
         return send_file(
             buffer,
             as_attachment=True,
-            download_name=f"boleta_venta_{venta['id']}.pdf",
+            download_name=f"boleta_{str(venta['id']).zfill(6)}.pdf",
             mimetype='application/pdf'
         )
         
     except Exception as e:
         print(f"Error al generar boleta: {e}")
-        return jsonify({'error': 'Error al generar la boleta'}), 500
+        # En caso de error, devolvemos un JSON para saber qué pasó
+        return jsonify({'error': f'Ocurrió un error: {str(e)}'}), 500
     
 # 2. Configura la carpeta (justo debajo de los imports)
 # Usamos 'app/static/img' como pediste
@@ -626,3 +699,26 @@ def editar_producto(id):
     categorias = models.obtener_categorias()
     proveedores = models.obtener_proveedores()
     return render_template('producto_form.html', producto=producto, categorias=categorias, proveedores=proveedores)
+
+@main_bp.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def perfil():
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        correo = request.form['correo']
+        password = request.form['password']
+        
+        # Actualizamos en BD
+        success, mensaje = models.actualizar_perfil_usuario(current_user.id, nombre, correo, password)
+        
+        if success:
+            flash("✅ " + mensaje, "success")
+            # Actualizamos la sesión actual para que se vea el cambio de nombre al instante
+            current_user.nombre = nombre
+            current_user.correo = correo
+        else:
+            flash("❌ Error: " + mensaje, "error")
+            
+        return redirect(url_for('main.perfil'))
+
+    return render_template('perfil.html', page_title="Mi Perfil")

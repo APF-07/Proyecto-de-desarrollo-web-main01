@@ -1,51 +1,114 @@
-{% extends "base.html" %} {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4>Categorías registradas</h4>
-    <a href="{{ url_for('main.nueva_categoria') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Nueva categoría
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+    <div>
+        <h3 class="fw-bold text-primary mb-1">Categorías</h3>
+        <p class="text-muted mb-0">Organiza tus productos por familias</p>
+    </div>
+    <a href="{{ url_for('main.nueva_categoria') }}" class="btn btn-primary shadow-sm rounded-pill px-4">
+        <i class="bi bi-plus-lg me-2"></i> Nueva Categoría
     </a>
 </div>
 
-<table class="table table-striped align-middle bg-white shadow-sm">
-    <thead class="table-light">
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for c in categorias %}
-        <tr>
-            <td>{{ c.id }}</td>
-            <td>{{ c.nombre }}</td>
-            <td>{{ c.descripcion }}</td>
-            <td>
-                <a
-                    href="{{ url_for('main.editar_categoria', id=c.id) }}"
-                    class="btn btn-sm btn-outline-warning"
-                    title="Editar"
-                >
-                    <i class="bi bi-pencil"></i>
-                </a>
-                <a
-                    href="{{ url_for('main.eliminar_categoria', id=c.id) }}"
-                    class="btn btn-sm btn-outline-danger"
-                    onclick="return confirm('¿Deseas eliminar esta categoría?');"
-                    title="Eliminar"
-                >
-                    <i class="bi bi-trash"></i>
-                </a>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="4" class="text-center text-muted py-3">
-                No hay categorías registradas
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="card border-0 shadow-sm fade-in-up" style="animation-delay: 0.1s;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 text-uppercase text-muted small fw-bold" style="width: 10%;">ID</th>
+                        <th class="text-uppercase text-muted small fw-bold" style="width: 30%;">Nombre</th>
+                        <th class="text-uppercase text-muted small fw-bold">Descripción</th>
+                        <th class="text-end pe-4 text-uppercase text-muted small fw-bold" style="width: 15%;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in categorias %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-secondary">#{{ c.id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-tag-fill"></i>
+                                </div>
+                                <span class="fw-bold text-dark">{{ c.nombre }}</span>
+                            </div>
+                        </td>
+                        <td class="text-muted">
+                            {% if c.descripcion %}
+                                {{ c.descripcion }}
+                            {% else %}
+                                <span class="fst-italic text-black-50 small">Sin descripción</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group">
+                                <a href="{{ url_for('main.editar_categoria', id=c.id) }}" 
+                                   class="btn btn-light text-primary btn-sm me-1" 
+                                   data-bs-toggle="tooltip" title="Editar">
+                                    <i class="bi bi-pencil-square fs-6"></i>
+                                </a>
+                                
+                                <a href="{{ url_for('main.eliminar_categoria', id=c.id) }}"
+                                   class="btn btn-light text-danger btn-sm btn-eliminar"
+                                   data-bs-toggle="tooltip" title="Eliminar">
+                                    <i class="bi bi-trash fs-6"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-muted opacity-50 mb-3">
+                                <i class="bi bi-tags display-4"></i>
+                            </div>
+                            <h5 class="text-muted fw-normal">No hay categorías registradas</h5>
+                            <p class="small text-muted mb-3">Empieza creando la primera categoría para tus productos.</p>
+                            <a href="{{ url_for('main.nueva_categoria') }}" class="btn btn-outline-primary btn-sm">
+                                Crear Categoría
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Inicializar tooltips de Bootstrap (opcional, para que salga texto al pasar mouse sobre botones)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // Lógica de SweetAlert2 para eliminar
+        $('.btn-eliminar').on('click', function(e) {
+            e.preventDefault(); // Detenemos el enlace normal
+            const url = $(this).attr('href'); // Guardamos la dirección a donde iba
+
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Si eliminas esta categoría, asegúrate de que no tenga productos asociados.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',     // Rojo para borrar
+                cancelButtonColor: '#3085d6',   // Azul para cancelar
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,           // Pone el cancelar primero (más seguro)
+                focusCancel: true               // Pone el foco en cancelar por seguridad
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url; // Si confirma, procedemos
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

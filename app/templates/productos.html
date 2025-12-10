@@ -108,19 +108,23 @@
 
 <script>
   $(document).ready(function() {
-    // 1. Iniciamos Select2
+    // 1. Configurar el desplegable de Categorías
     $('#categoryFilter').select2({
         theme: 'bootstrap-5',
         width: '100%',
-        placeholder: 'Todas las categorías'
+        minimumResultsForSearch: Infinity, // <--- ESTO QUITA EL BUSCADOR DE TEXTO DEL DESPLEGABLE
+        placeholder: "Todas las categorías",
+        allowClear: false
     });
 
+    // Referencias
     var searchInput = $('#searchInput');
     var categoryFilter = $('#categoryFilter');
-    var productCards = $('.product-card'); // Esto selecciona las columnas (col-md-4...)
+    var productCards = $('.product-card'); // Son las columnas (col-xl-3...)
     var noResults = $('#noResults');
     var countLabel = $('#countLabel');
 
+    // Función principal de filtrado
     function filterProducts() {
       var searchTerm = searchInput.val().toLowerCase().trim();
       var categoryValue = categoryFilter.val();
@@ -129,29 +133,28 @@
 
       productCards.each(function() {
         var card = $(this);
+        // Obtenemos datos (convertimos a string por seguridad)
         var name = (card.data('name') || '').toString().toLowerCase();
         var category = (card.data('category') || '').toString();
 
+        // Lógica de coincidencia
         var matchesSearch = name.indexOf(searchTerm) > -1;
         var matchesCategory = !categoryValue || category === categoryValue;
 
         if (matchesSearch && matchesCategory) {
-          // CORRECCIÓN AQUÍ: Solo mostramos la tarjeta, NO tocamos el padre
+          // CORRECCIÓN: Solo mostramos esta tarjeta
           card.removeClass('d-none'); 
-          // card.show() a veces falla con Bootstrap, quitar d-none es más seguro
-          card.show(); 
           visibleCount++;
         } else {
-          // CORRECCIÓN AQUÍ: Solo ocultamos la tarjeta
+          // CORRECCIÓN: Solo ocultamos esta tarjeta (¡NO al padre!)
           card.addClass('d-none');
-          card.hide();
         }
       });
 
       // Actualizar contador
       countLabel.text(visibleCount + " productos");
       
-      // Mostrar mensaje si no hay resultados
+      // Mostrar mensaje de vacío si hace falta
       if (visibleCount === 0) {
         noResults.removeClass('d-none');
       } else {
@@ -159,7 +162,7 @@
       }
     }
 
-    // Escuchamos eventos
+    // Escuchar cambios (Select2 usa evento especial)
     categoryFilter.on('select2:select change', filterProducts);
     searchInput.on('keyup input', filterProducts);
   });

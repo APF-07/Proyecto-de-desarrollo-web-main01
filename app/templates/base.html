@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title or "Inventario Agrícola - Cereal Sierra" }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/minty/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='../static/img/favicon.png') }}">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header text-center mb-4">
+        <i class="bi bi-basket-fill text-primary fs-2"></i>
+        <h2 class="sidebar-title mt-2 text-white">Cereal Sierra</h2>
+      </div>
+
+      <ul class="nav flex-column sidebar-menu">
+        <li class="nav-item">
+          <a href="{{ url_for('main.inicio') }}" class="nav-link">
+            <i class="bi bi-house fs-5"></i> <span>Inicio</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('main.listar_productos') }}" class="nav-link">
+            <i class="bi bi-box-seam fs-5"></i> <span>Productos</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('main.listar_categorias') }}" class="nav-link">
+            <i class="bi bi-tags fs-5"></i> <span>Categorías</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('main.listar_proveedores') }}" class="nav-link">
+            <i class="bi bi-truck fs-5"></i> <span>Proveedores</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.listar_ventas') }}">
+            <i class="bi bi-receipt fs-5"></i> <span>Ventas</span>
+          </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.reabastecer_inventario') }}">
+                <i class="bi bi-box-arrow-in-down fs-5"></i> <span>Reabastecer</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                <i class="bi bi-graph-up fs-5"></i> <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item mt-auto pt-4">
+          <a href="{{ url_for('main.logout') }}" class="nav-link logout text-danger">
+            <i class="bi bi-door-open fs-5"></i> <span>Cerrar Sesión</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar d-flex justify-content-between align-items-center bg-white shadow-sm">
+        <h5 class="m-0 fw-bold text-primary">{{ page_title or "Panel principal" }}</h5>
+        <div>
+          {% if current_user.is_authenticated %}
+          <div class="d-inline-block bg-light rounded-pill px-3 py-1">
+            <i class="bi bi-person-circle text-primary"></i> 
+            <small class="fw-bold text-dark">{{ current_user.nombre }}</small>
+            <span class="badge bg-primary ms-1">{{ current_user.rol }}</span>
+          </div>
+          {% endif %}
+        </div>
+    </header>
+
+      <section class="content p-4 fade-in-up">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show shadow-sm border-0" role="alert">
+                        {% if category == 'error' %}
+                            <i class="bi bi-exclamation-circle-fill me-2"></i>
+                        {% else %}
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </section>
+
+      <footer class="footer text-center py-3 bg-light mt-auto">
+        <small class="text-muted">© 2025 Inventario Agrícola | <strong>Cereal Sierra</strong></small>
+      </footer>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script>
+    $(document).ready(function() {
+        // 1. Inicializar DataTables
+        $('.table').not('.no-datatable').DataTable({
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+            responsive: true,
+            columnDefs: [{ orderable: false, targets: -1 }],
+            dom: '<"d-flex justify-content-between align-items-center mb-3"f>t<"d-flex justify-content-between align-items-center mt-3"ip>',
+        });
+
+        // 2. Inicializar Select2 (Buscadores en selects)
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Seleccione una opción'
+        });
+        // Aplicar a selects normales automáticamente
+        $('select:not(.no-select2)').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+
+        // 3. Interceptar Eliminaciones con SweetAlert2
+        // Busca cualquier enlace que tenga "eliminar" en su href o texto
+        $('a[href*="eliminar"], a[onclick*="confirm"]').on('click', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            
+            // Si es un botón con onclick custom, lo dejamos pasar si no tiene href
+            if (!url || url === '#') return;
+
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Esta acción no se puede deshacer",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#78c2ad',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+
+        // 4. Alertas Flash con SweetAlert (Toast)
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    
+                    Toast.fire({
+                        icon: "{{ 'error' if category == 'error' else 'success' }}",
+                        title: "{{ message }}"
+                    });
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    });
+  </script>
+</body>
+</html> 

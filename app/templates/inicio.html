@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+  
+  <div class="p-5 mb-5 bg-primary text-white rounded-5 shadow-sm fade-in-up" 
+       style="background: linear-gradient(135deg, #78c2ad 0%, #4a9c8a 100%); position: relative; overflow: hidden;">
+    <i class="bi bi-tree-fill position-absolute text-white opacity-25" style="font-size: 15rem; right: -50px; bottom: -50px;"></i>
+    
+    <div class="position-relative z-2">
+        <h1 class="display-4 fw-bold mb-3">Inventario Agrícola</h1>
+        <p class="lead mb-4 opacity-75" style="max-width: 600px;">
+            Gestiona tu microempresa cerealera con eficiencia. Controla stock, ventas y proveedores en un solo lugar.
+        </p>
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('main.listar_ventas') }}" class="btn btn-light text-primary fw-bold px-4 py-2 rounded-pill shadow-sm">
+                <i class="bi bi-plus-lg me-2"></i> Nueva Venta
+            </a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-pill">
+                Ver Dashboard
+            </a>
+        </div>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center mb-4 fade-in-up" style="animation-delay: 0.1s;">
+    <h4 class="text-muted fw-bold m-0">Accesos Directos</h4>
+    <div class="flex-grow-1 ms-3 border-bottom"></div>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    
+    <div class="col-md-6 col-lg-3 fade-in-up" style="animation-delay: 0.2s;">
+      <a href="{{ url_for('main.listar_productos') }}" class="text-decoration-none">
+        <div class="card h-100 border-0 shadow-sm hover-scale text-center p-4">
+          <div class="icon-circle bg-info bg-opacity-10 text-info mb-3 mx-auto">
+            <i class="bi bi-box-seam fs-2"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Productos</h5>
+          <p class="text-muted small">Cereales y precios</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3 fade-in-up" style="animation-delay: 0.3s;">
+      <a href="{{ url_for('main.listar_ventas') }}" class="text-decoration-none">
+        <div class="card h-100 border-0 shadow-sm hover-scale text-center p-4">
+          <div class="icon-circle bg-warning bg-opacity-10 text-warning mb-3 mx-auto">
+            <i class="bi bi-receipt fs-2"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Ventas</h5>
+          <p class="text-muted small">Facturación y clientes</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3 fade-in-up" style="animation-delay: 0.4s;">
+      <a href="{{ url_for('main.reabastecer_inventario') }}" class="text-decoration-none">
+        <div class="card h-100 border-0 shadow-sm hover-scale text-center p-4">
+          <div class="icon-circle bg-success bg-opacity-10 text-success mb-3 mx-auto">
+            <i class="bi bi-truck fs-2"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Reabastecer</h5>
+          <p class="text-muted small">Entradas de stock</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3 fade-in-up" style="animation-delay: 0.5s;">
+      <a href="{{ url_for('main.listar_proveedores') }}" class="text-decoration-none">
+        <div class="card h-100 border-0 shadow-sm hover-scale text-center p-4">
+          <div class="icon-circle bg-secondary bg-opacity-10 text-secondary mb-3 mx-auto">
+            <i class="bi bi-shop fs-2"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Proveedores</h5>
+          <p class="text-muted small">Gestión de socios</p>
+        </div>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .icon-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+  }
+  .hover-scale {
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .hover-scale:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 1rem 2rem rgba(0,0,0,0.1) !important;
+  }
+  .hover-scale:hover .icon-circle {
+    transform: scale(1.1);
+  }
+</style>
+{% endblock %}

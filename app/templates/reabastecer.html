@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-box-seam"></i>
+                        Reabastecer Inventario
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Mostrar mensajes flash -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST">
+                        <!-- Selección de producto -->
+                        <div class="mb-3">
+                            <label for="producto_id" class="form-label">Producto a Reabastecer *</label>
+                            <select class="form-select" id="producto_id" name="producto_id" required>
+                                <option value="">Seleccione un producto...</option>
+                                {% for p in productos %}
+                                <option value="{{ p.id }}" 
+                                        data-stock="{{ p.stock }}"
+                                        data-unidad="{{ p.unidad }}"
+                                        {% if producto_seleccionado and p.id == producto_seleccionado|int %}selected{% endif %}>
+                                    {{ p.nombre }} - Stock actual: {{ p.stock }} {{ p.unidad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Seleccione el producto que desea reabastecer.</div>
+                        </div>
+
+                        <!-- Cantidad -->
+                        <div class="mb-3">
+                            <label for="cantidad" class="form-label">Cantidad a Agregar *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="cantidad" name="cantidad" 
+                                       min="0.01" step="0.01" required placeholder="Ej: 10.5">
+                                <span class="input-group-text" id="unidad_medida">---</span>
+                            </div>
+                            <div class="form-text">Ingrese la cantidad que desea agregar al inventario.</div>
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div class="mb-4">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" 
+                                      rows="3" placeholder="Ej: Compra a proveedor, inventario inicial, etc."></textarea>
+                            <div class="form-text">Descripción del reabastecimiento (opcional).</div>
+                        </div>
+
+                        <!-- Información del stock actual -->
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Información:</strong>
+                            <span id="info_stock">Seleccione un producto para ver detalles</span>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.listar_productos') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver a Productos
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Reabastecer Inventario
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabla de productos con stock bajo - VERSIÓN LIMPIA -->
+            <div class="card mt-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Productos con Stock Bajo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if productos_bajos %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Stock Actual</th>
+                                    <th class="text-center">Stock Mínimo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for producto in productos_bajos %}
+                                <tr>
+                                    <td>{{ producto.producto }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger">{{ "%.2f"|format(producto.stock_actual) }}</span>
+                                    </td>
+                                    <td class="text-center">{{ "%.2f"|format(producto.stock_minimo) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                        <p class="text-muted mt-2 mb-0">No hay productos con stock bajo</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productoSelect = document.getElementById('producto_id');
+    const cantidadInput = document.getElementById('cantidad');
+    const unidadSpan = document.getElementById('unidad_medida');
+    const infoStock = document.getElementById('info_stock');
+
+    function actualizarInfoProducto() {
+        const selectedOption = productoSelect.options[productoSelect.selectedIndex];
+        const stockActual = selectedOption.getAttribute('data-stock');
+        const unidad = selectedOption.getAttribute('data-unidad');
+        
+        if (stockActual && unidad && selectedOption.value !== "") {
+            unidadSpan.textContent = unidad;
+            infoStock.innerHTML = `Stock actual: <strong>${stockActual} ${unidad}</strong>. Ingrese la cantidad a agregar.`;
+            cantidadInput.focus();
+            
+            // Establecer un valor sugerido si el stock está bajo
+            const stockNum = parseFloat(stockActual);
+            if (stockNum < 10) {
+                cantidadInput.value = Math.max(10, stockNum * 2).toFixed(2);
+            }
+        } else {
+            unidadSpan.textContent = '---';
+            infoStock.textContent = 'Seleccione un producto para ver detalles';
+            cantidadInput.value = '';
+        }
+    }
+
+    productoSelect.addEventListener('change', actualizarInfoProducto);
+
+    // Si hay un producto seleccionado por URL, activar el cambio
+    {% if producto_seleccionado %}
+    setTimeout(() => {
+        const productoId = "{{ producto_seleccionado }}";
+        if (productoId) {
+            productoSelect.value = productoId;
+            actualizarInfoProducto();
+        }
+    }, 100);
+    {% endif %}
+
+    // Validar el formulario antes de enviar
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const cantidad = parseFloat(cantidadInput.value);
+        if (cantidad <= 0) {
+            e.preventDefault();
+            alert('La cantidad debe ser mayor a 0');
+            cantidadInput.focus();
+            return false;
+        }
+        
+        if (!productoSelect.value) {
+            e.preventDefault();
+            alert('Por favor seleccione un producto');
+            productoSelect.focus();
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+.btn-outline-success:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s;
+}
+</style>
+
+{% endblock %}

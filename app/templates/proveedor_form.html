@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h4 class="mb-4">{{ 'Editar proveedor' if proveedor else 'Registrar nuevo proveedor' }}</h4>
+
+<form method="POST" class="shadow-sm p-4 bg-white rounded">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-control" name="nombre"
+             value="{{ proveedor.nombre if proveedor else '' }}" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Teléfono</label>
+      <input type="text" class="form-control" name="telefono"
+             value="{{ proveedor.telefono if proveedor else '' }}" placeholder="Ej: 987654321">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Correo electrónico</label>
+      <input type="email" class="form-control" name="correo"
+             value="{{ proveedor.correo if proveedor else '' }}" placeholder="ejemplo@correo.com">
+    </div>
+    <div class="col-md-12">
+      <label class="form-label">Dirección</label>
+      <input type="text" class="form-control" name="direccion"
+             value="{{ proveedor.direccion if proveedor else '' }}" placeholder="Calle o avenida...">
+    </div>
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-check-circle"></i> Guardar
+      </button>
+      <a href="{{ url_for('main.listar_proveedores') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

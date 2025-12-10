@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block content %}
+<h4 class="mb-4">
+  {% if producto %}Editar producto{% else %}Registrar nuevo producto{% endif %}
+</h4>
+
+<form method="POST" class="shadow-sm p-4 bg-white rounded" enctype="multipart/form-data" novalidate>
+  <div class="row g-3">
+    
+    <div class="col-12 mb-4">
+    <label class="form-label fw-bold">Imagen del Producto</label>
+    <div class="d-flex gap-3 align-items-center p-3 border rounded bg-light">
+        <div class="flex-grow-1">
+            <input type="file" class="form-control" name="imagen" accept="image/*">
+            <div class="form-text">Formatos permitidos: JPG, PNG, WEBP.</div>
+        </div>
+
+        {% if producto and producto.imagen %}
+        <div class="text-center">
+            <small class="d-block text-muted mb-1">Actual:</small>
+            <img src="{{ url_for('static', filename='img/' + producto.imagen) }}" 
+                 alt="Imagen actual" 
+                 class="rounded border shadow-sm bg-white" 
+                 style="width: 60px; height: 60px; object-fit: cover;">
+        </div>
+        {% endif %}
+    </div>
+</div>
+    <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
+    <div class="col-12">
+      <h6 class="text-muted mb-3 border-bottom pb-2">Información básica</h6>
+    </div>
+
+    <!-- Nombre del producto -->
+    <div class="col-md-6">
+      <label class="form-label">Nombre del producto</label>
+      <input
+        type="text"
+        class="form-control"
+        name="nombre"
+        placeholder="Ej. Quinua blanca"
+        value="{{ producto.nombre if producto else '' }}"
+        required
+      >
+    </div>
+
+    <!-- Categoría -->
+    <div class="col-md-3">
+      <label class="form-label">Categoría</label>
+      <select name="categoria" class="form-select" required>
+        <option value="">-- Seleccionar --</option>
+        {% for c in categorias %}
+          <option value="{{ c.id }}"
+            {% if producto and (producto.id_categoria == c.id or producto.id_categoria|string == c.id|string) %}selected{% endif %}>
+            {{ c.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Proveedor -->
+    <div class="col-md-3">
+      <label class="form-label">Proveedor</label>
+      <select name="proveedor" class="form-select" required>
+        <option value="">-- Seleccionar --</option>
+        {% for p in proveedores %}
+          <option value="{{ p.id }}"
+            {% if producto and (producto.id_proveedor == p.id or producto.id_proveedor|string == p.id|string) %}selected{% endif %}>
+            {{ p.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- SECCIÓN: PRECIO Y UNIDAD -->
+    <div class="col-12 mt-4">
+      <h6 class="text-muted mb-3 border-bottom pb-2">Precio y unidad de medida</h6>
+    </div>
+
+    <!-- Precio unitario -->
+    <div class="col-md-4">
+      <label class="form-label">Precio unitario (S/)</label>
+      <input
+        type="number"
+        class="form-control"
+        name="precio"
+        step="0.1"
+        min="0"
+        placeholder="Ej. 14.7"
+        value="{{ producto.precio if producto else '' }}"
+        required
+      >
+      <div class="form-text">Un decimal (ej. 14.7 → S/14.70)</div>
+    </div>
+
+    <!-- Unidad de medida -->
+    <div class="col-md-8">
+      <label class="form-label">Unidad de medida</label>
+      <select name="unidad" class="form-select" required>
+        <option value="">-- Seleccionar unidad --</option>
+        {% set unidades = {
+          'kg': 'Kilogramo (1,000 gramos)',
+          'g': 'Gramo',
+          'qq': 'Quintal (100 kg)',
+          'arroba': 'Arroba (≈ 11.5 kg)',
+          'saco': 'Saco estándar (≈ 50 kg)',
+          'unidad': 'Unidad individual'
+        } %}
+        {% for clave, descripcion in unidades.items() %}
+          <option value="{{ clave }}"
+            {% if producto and producto.unidad == clave %}selected{% endif %}>
+            {{ clave | upper }} - {{ descripcion }}
+          </option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Unidad comercial utilizada para el producto</div>
+    </div>
+
+    <!-- SECCIÓN: GESTIÓN DE STOCK -->
+    <div class="col-12 mt-4">
+      <h6 class="text-muted mb-3 border-bottom pb-2">Gestión de stock</h6>
+    </div>
+
+    <!-- Stock inicial (solo en creación) -->
+    {% if not producto %}
+    <div class="col-md-4">
+      <label class="form-label">Stock inicial</label>
+      <input
+        type="number"
+        class="form-control"
+        name="stock_inicial"
+        step="1"
+        min="0"
+        placeholder="Ej. 100"
+        value="{{ request.form.stock_inicial if request.form.stock_inicial else '' }}"
+        required
+      >
+      <div class="form-text">Cantidad inicial en inventario</div>
+    </div>
+    {% endif %}
+
+    <!-- Stock actual (solo en edición: readonly) -->
+    {% if producto %}
+    <div class="col-md-4">
+      <label class="form-label">Stock actual</label>
+      <input
+        type="number"
+        class="form-control"
+        name="stock_actual"
+        step="1"
+        min="0"
+        value="{{ producto.stock | int if producto.stock is not none else 0 }}"
+        readonly
+      >
+      <div class="form-text">Solo lectura (no editable)</div>
+    </div>
+    {% endif %}
+
+    <!-- Stock mínimo -->
+    <div class="col-md-4">
+      <label class="form-label">Stock mínimo</label>
+      <input
+        type="number"
+        class="form-control"
+        name="stock_minimo"
+        step="1"
+        min="0"
+        placeholder="Ej. 20"
+        value="{{ producto.stock_minimo if producto else '' }}"
+        required
+      >
+      <div class="form-text">Alerta cuando esté por debajo</div>
+    </div>
+
+    <!-- BOTONES DE ACCIÓN -->
+    <div class="col-12 mt-4 pt-3 border-top text-end">
+      <a href="{{ url_for('main.listar_productos') }}" class="btn btn-secondary">
+        <i class="bi bi-x-circle"></i>
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-check-circle"></i>
+        {% if producto %}Actualizar producto{% else %}Guardar producto{% endif %}
+      </button>
+    </div>
+
+  </div>
+</form>
+{% endblock %}

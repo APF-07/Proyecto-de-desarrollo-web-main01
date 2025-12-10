@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+        <div>
+            <h3 class="fw-bold text-primary mb-1">Punto de Venta</h3>
+            <p class="text-muted mb-0">Registra ventas y gestiona clientes</p>
+        </div>
+        <ul class="nav nav-pills bg-white shadow-sm p-1 rounded-pill" id="ventasTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active rounded-pill px-4" data-bs-toggle="tab" data-bs-target="#registrar">
+                    <i class="bi bi-cart-plus me-2"></i>Nueva Venta
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link rounded-pill px-4" data-bs-toggle="tab" data-bs-target="#historial">
+                    <i class="bi bi-clock-history me-2"></i>Historial
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link rounded-pill px-4" data-bs-toggle="tab" data-bs-target="#clientes">
+                    <i class="bi bi-people me-2"></i>Clientes
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="tab-content" id="ventasTabsContent">
+        <div class="tab-pane fade show active" id="registrar">
+            <div class="row g-4">
+                <div class="col-lg-8 fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-basket me-2"></i>Productos</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-9">
+                                    <label class="form-label text-muted small fw-bold">BUSCAR PRODUCTO</label>
+                                    <select id="producto_select" class="form-select select2">
+                                        <option value="">Buscar por nombre o código...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small fw-bold">CANTIDAD</label>
+                                    <div class="input-group">
+                                        <input type="number" id="cantidad_producto" class="form-control" min="1" value="1">
+                                        <button class="btn btn-primary" type="button" onclick="agregarProducto()">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive rounded-3 border">
+                                <table class="table table-hover mb-0 align-middle no-datatable">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">Producto</th>
+                                            <th class="text-center">Cant.</th>
+                                            <th class="text-end">Precio</th>
+                                            <th class="text-end">Subtotal</th>
+                                            <th class="text-center"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpoProductos">
+                                        <tr id="emptyRow">
+                                            <td colspan="5" class="text-center py-5 text-muted">
+                                                <i class="bi bi-cart3 display-6 mb-3 d-block opacity-50"></i>
+                                                Agrega productos para comenzar la venta
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 fade-in-up" style="animation-delay: 0.2s;">
+                    <form action="{{ url_for('main.nueva_venta') }}" method="POST" id="formVenta">
+                        <input type="hidden" name="cliente_id" id="cliente_id" required>
+                        <input type="hidden" name="detalles" id="detalles_venta" value="[]">
+                        
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body">
+                                <label class="form-label text-muted small fw-bold">CLIENTE</label>
+                                <div class="input-group mb-2">
+                                    <select class="form-select select2" id="cliente_select" onchange="seleccionarClienteDesdeSelect()">
+                                        <option value="">Seleccionar cliente...</option>
+                                        {% for c in clientes %}
+                                        <option value="{{ c.id }}" data-nombre="{{ c.nombre }}">{{ c.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <a href="{{ url_for('main.nuevo_cliente') }}" class="btn btn-outline-secondary" title="Nuevo Cliente">
+                                        <i class="bi bi-person-plus"></i>
+                                    </a>
+                                </div>
+                                <div class="bg-light rounded p-2 border d-flex align-items-center">
+                                    <div class="bg-primary text-white rounded-circle p-2 me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block" style="line-height: 1;">Cliente seleccionado</small>
+                                        <span id="clienteSeleccionado" class="fw-bold text-dark">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm bg-primary text-white">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between mb-2 opacity-75">
+                                    <span>Subtotal</span>
+                                    <span>S/. <span id="subtotalDisplay">0.00</span></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-4 opacity-75">
+                                    <span>IGV (18%)</span>
+                                    <span>S/. 0.00</span>
+                                </div>
+                                <hr class="border-white opacity-25">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <span class="h5 mb-0">TOTAL</span>
+                                    <span class="display-6 fw-bold">S/. <span id="totalDisplay">0.00</span></span>
+                                </div>
+                                <input type="hidden" name="total" id="total">
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-light text-primary fw-bold py-3 shadow-sm" id="btnGuardarVenta" disabled>
+                                        <i class="bi bi-check-lg me-2"></i>CONFIRMAR VENTA
+                                    </button>
+                                    <button type="button" class="btn btn-outline-light btn-sm opacity-75" onclick="limpiarFormulario()">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="historial">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 align-middle no-datatable">
+                        <thead class="bg-light text-uppercase text-muted small">
+                            <tr>
+                                <th class="ps-4">ID</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th class="text-end pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in ventas %}
+                            <tr>
+                                <td class="ps-4 fw-bold">#{{ v.id }}</td>
+                                <td>{{ v.cliente }}</td>
+                                <td>{{ v.fecha }}</td>
+                                <td class="fw-bold text-primary">S/. {{ "%.2f"|format(v.total) }}</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light text-primary" onclick="generarBoletaPDF({{ v.id }})">
+                                        <i class="bi bi-printer me-1"></i> Boleta
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="clientes">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    {% if clientes %}
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Teléfono</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in clientes %}
+                            <tr>
+                                <td class="fw-bold">{{ c.nombre }}</td>
+                                <td>{{ c.telefono }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-primary rounded-pill px-3" onclick="seleccionarClienteDesdeLista('{{ c.id }}', '{{ c.nombre }}')">
+                                        Vender
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <p class="text-muted">No hay clientes registrados</p>
+                        <a href="{{ url_for('main.nuevo_cliente') }}" class="btn btn-primary">Crear Cliente</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Lógica de Venta (Adaptada al nuevo diseño)
+let productosDisponibles = [];
+let productosSeleccionados = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarProductos();
+});
+
+function cargarProductos() {
+    fetch('/api/productos_venta')
+        .then(response => response.json())
+        .then(data => {
+            productosDisponibles = data;
+            const select = $('#producto_select'); // Usando jQuery para Select2
+            select.empty();
+            select.append('<option value="">Buscar por nombre...</option>');
+            
+            data.forEach(p => {
+                select.append(new Option(`${p.nombre} - Stock: ${p.stock} - S/. ${p.precio}`, p.id, false, false));
+            });
+            // Guardar data en atributos para acceso rápido si es necesario, 
+            // aunque mejor buscar en el array por ID
+        });
+}
+
+function agregarProducto() {
+    const id = $('#producto_select').val();
+    const cant = parseInt(document.getElementById('cantidad_producto').value);
+    
+    if(!id) return Swal.fire('Error', 'Selecciona un producto', 'warning');
+    
+    const producto = productosDisponibles.find(p => p.id == id);
+    if(cant > producto.stock) return Swal.fire('Stock insuficiente', `Solo quedan ${producto.stock}`, 'error');
+    
+    // Buscar si ya existe
+    const existing = productosSeleccionados.find(p => p.id == id);
+    if(existing) {
+        existing.cantidad += cant;
+    } else {
+        productosSeleccionados.push({
+            id: producto.id,
+            nombre: producto.nombre,
+            precio: producto.precio,
+            cantidad: cant
+        });
+    }
+    
+    renderizarTabla();
+    $('#producto_select').val(null).trigger('change');
+    document.getElementById('cantidad_producto').value = 1;
+}
+
+function renderizarTabla() {
+    const tbody = document.getElementById('cuerpoProductos');
+    tbody.innerHTML = '';
+    let total = 0;
+    
+    if(productosSeleccionados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-cart3 display-6 mb-3 d-block opacity-50"></i>Agrega productos</td></tr>`;
+    }
+    
+    productosSeleccionados.forEach((p, index) => {
+        const subtotal = p.cantidad * p.precio;
+        total += subtotal;
+        
+        tbody.innerHTML += `
+            <tr>
+                <td class="ps-4 fw-medium">${p.nombre}</td>
+                <td class="text-center">${p.cantidad}</td>
+                <td class="text-end">S/. ${p.precio.toFixed(2)}</td>
+                <td class="text-end fw-bold">S/. ${subtotal.toFixed(2)}</td>
+                <td class="text-center">
+                    <button class="btn btn-link text-danger p-0" onclick="eliminar(${index})"><i class="bi bi-x-circle-fill"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    // Actualizar Totales
+    document.getElementById('subtotalDisplay').textContent = total.toFixed(2);
+    document.getElementById('totalDisplay').textContent = total.toFixed(2);
+    document.getElementById('total').value = total;
+    document.getElementById('detalles_venta').value = JSON.stringify(productosSeleccionados.map(p => ({id_producto: p.id, cantidad: p.cantidad})));
+    
+    validarBoton();
+}
+
+function eliminar(index) {
+    productosSeleccionados.splice(index, 1);
+    renderizarTabla();
+}
+
+function seleccionarClienteDesdeSelect() {
+    const id = $('#cliente_select').val();
+    const nombre = $('#cliente_select option:selected').text();
+    if(id) {
+        document.getElementById('cliente_id').value = id;
+        document.getElementById('clienteSeleccionado').textContent = nombre.split('-')[0]; // Solo nombre
+    } else {
+        document.getElementById('cliente_id').value = '';
+        document.getElementById('clienteSeleccionado').textContent = '--';
+    }
+    validarBoton();
+}
+
+function seleccionarClienteDesdeLista(id, nombre) {
+    $('#cliente_select').val(id).trigger('change');
+    // Cambiar tab
+    const triggerEl = document.querySelector('button[data-bs-target="#registrar"]');
+    bootstrap.Tab.getInstance(triggerEl).show();
+}
+
+function validarBoton() {
+    const cliente = document.getElementById('cliente_id').value;
+    const items = productosSeleccionados.length > 0;
+    document.getElementById('btnGuardarVenta').disabled = !(cliente && items);
+}
+
+function limpiarFormulario() {
+    productosSeleccionados = [];
+    renderizarTabla();
+    $('#cliente_select').val(null).trigger('change');
+}
+
+// Función PDF (Reutilizada del código anterior)
+function generarBoletaPDF(id) {
+    window.location.href = `/api/ventas/${id}/pdf/boleta`;
+}
+</script>
+{% endblock %}

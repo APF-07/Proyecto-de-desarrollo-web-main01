@@ -1,0 +1,40 @@
+{% extends "base.html" %} {% block content %}
+<h4 class="mb-4">
+    {{ 'Editar categoría' if categoria else 'Registrar nueva categoría' }}
+</h4>
+
+<form method="POST" class="shadow-sm p-4 bg-white rounded">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Nombre</label>
+            <input
+                type="text"
+                class="form-control"
+                name="nombre"
+                value="{{ categoria.nombre if categoria else '' }}"
+                required
+            />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Descripción</label>
+            <input
+                type="text"
+                class="form-control"
+                name="descripcion"
+                value="{{ categoria.descripcion if categoria else '' }}"
+                placeholder="Describe brevemente la categoría"
+            />
+        </div>
+        <div class="col-12 text-end">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Guardar
+            </button>
+            <a
+                href="{{ url_for('main.listar_categorias') }}"
+                class="btn btn-secondary"
+                >Cancelar</a
+            >
+        </div>
+    </div>
+</form>
+{% endblock %}

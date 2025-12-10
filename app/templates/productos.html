@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+    <div>
+      <h3 class="fw-bold text-primary mb-1">Catálogo de Productos</h3>
+      <p class="text-muted mb-0">Gestiona precios y niveles de stock</p>
+    </div>
+    <a href="{{ url_for('main.nuevo_producto') }}" class="btn btn-primary shadow-sm rounded-pill px-4">
+      <i class="bi bi-plus-lg me-2"></i> Nuevo Producto
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4 fade-in-up" style="animation-delay: 0.1s;">
+    <div class="card-body p-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-0 ps-3"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-0 shadow-none" placeholder="Buscar por nombre..." id="searchInput">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select border-0 bg-light" id="categoryFilter">
+                <option value="">Todas las categorías</option>
+                {% for categoria in productos|map(attribute='categoria')|unique %}
+                <option value="{{ categoria }}">{{ categoria }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 text-end pe-3">
+             <small class="text-muted" id="countLabel">{{ productos|length }} productos</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4" id="productsGrid">
+    {% for p in productos %}
+    <div class="col-xl-3 col-lg-4 col-md-6 product-card fade-in-up" 
+         style="animation-delay: 0.1s;"
+         data-category="{{ p.categoria }}" 
+         data-name="{{ p.nombre|lower }}">
+         
+      <div class="card h-100 border-0 shadow-sm product-inner position-relative overflow-hidden">
+        <div class="position-absolute top-0 start-0 bottom-0 bg-{{ 'secondary' if p.estado == 'Inactivo' else ('warning' if p.stock <= p.stock_minimo else 'success') }}" style="width: 4px; z-index: 1;"></div>
+        
+        <div class="position-relative bg-light text-center d-flex align-items-center justify-content-center" style="height: 180px; overflow: hidden;">
+            {% if p.imagen %}
+                <img src="{{ url_for('static', filename='img/' + p.imagen) }}" alt="{{ p.nombre }}" class="w-100 h-100 object-fit-cover">
+            {% else %}
+                <i class="bi bi-image text-muted opacity-25" style="font-size: 4rem;"></i>
+            {% endif %}
+            <span class="position-absolute top-0 end-0 m-2 badge bg-white text-dark shadow-sm border">{{ p.categoria }}</span>
+        </div>
+
+        <div class="card-body ps-4 pt-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div></div>
+                <div class="dropdown">
+                    <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown" style="position: relative; z-index: 2;">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow" style="z-index: 1050;">
+                        <li><a class="dropdown-item" href="{{ url_for('main.editar_producto', id=p.id) }}"><i class="bi bi-pencil me-2 text-primary"></i>Editar</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.reabastecer_inventario') }}?producto_id={{ p.id }}"><i class="bi bi-plus-circle me-2 text-success"></i>Reabastecer</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            {% if p.estado == 'Activo' %}
+                            <a class="dropdown-item text-danger" href="{{ url_for('main.toggle_estado_producto', id=p.id, estado_actual=p.estado) }}"><i class="bi bi-pause-circle me-2"></i>Desactivar</a>
+                            {% else %}
+                            <a class="dropdown-item text-success" href="{{ url_for('main.toggle_estado_producto', id=p.id, estado_actual=p.estado) }}"><i class="bi bi-play-circle me-2"></i>Activar</a>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <h5 class="card-title fw-bold text-dark mb-1 {{ 'text-decoration-line-through text-muted' if p.estado == 'Inactivo' }}">{{ p.nombre }}</h5>
+            <small class="text-muted d-block mb-3"><i class="bi bi-shop me-1"></i> {{ p.proveedor }}</small>
+
+            <div class="d-flex justify-content-between align-items-end mt-auto">
+                <div>
+                    <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Precio</small>
+                    <div class="fw-bold text-primary fs-5">S/. {{ "%.2f"|format(p.precio) }}</div>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Stock</small>
+                    <div class="fw-bold {{ 'text-secondary' if p.estado == 'Inactivo' else ('text-success' if p.stock > p.stock_minimo else 'text-warning') }}">
+                        {{ p.stock }} <span class="fs-6 text-muted fw-normal">{{ p.unidad }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div id="noResults" class="text-center py-5 d-none">
+    <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+        <i class="bi bi-search text-muted fs-1"></i>
+    </div>
+    <h5 class="text-muted">No se encontraron productos</h5>
+    <p class="text-muted">Intenta cambiar los filtros</p>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    // Referencias a los elementos
+    var searchInput = $('#searchInput');
+    var categoryFilter = $('#categoryFilter');
+    var productCards = $('.product-card');
+    var noResults = $('#noResults');
+    var countLabel = $('#countLabel');
+
+    // Función que filtra las tarjetas
+    function filterProducts() {
+      var searchTerm = searchInput.val().toLowerCase().trim();
+      var categoryValue = categoryFilter.val(); // Select2 actualiza el valor del select original automáticamente
+
+      var visibleCount = 0;
+
+      productCards.each(function() {
+        var card = $(this);
+        // Obtenemos los datos y los convertimos a string por seguridad
+        var name = (card.data('name') || '').toString().toLowerCase();
+        var category = (card.data('category') || '').toString();
+
+        // 1. ¿Coincide el nombre?
+        var matchesSearch = name.indexOf(searchTerm) > -1;
+        
+        // 2. ¿Coincide la categoría? (Si categoryValue es vacío, es "Todas")
+        var matchesCategory = !categoryValue || category === categoryValue;
+
+        if (matchesSearch && matchesCategory) {
+          card.show(); // Mostrar columna
+          visibleCount++;
+        } else {
+          card.hide(); // Ocultar columna
+        }
+      });
+
+      // Actualizar contador y mensaje de vacío
+      countLabel.text(visibleCount + " productos");
+      if (visibleCount === 0) {
+        noResults.removeClass('d-none');
+      } else {
+        noResults.addClass('d-none');
+      }
+    }
+
+    // EVENTOS:
+    // Escuchamos 'change' normal Y TAMBIÉN 'select2:select' por si acaso
+    categoryFilter.on('change select2:select', function() {
+        filterProducts();
+    });
+
+    // Escuchamos escritura en el buscador
+    searchInput.on('keyup input', function() {
+        filterProducts();
+    });
+
+    // Ejecutar una vez al inicio
+    filterProducts();
+  });
+</script>
+{% endblock %}

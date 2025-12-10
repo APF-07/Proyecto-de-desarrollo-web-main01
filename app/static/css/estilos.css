@@ -1,0 +1,136 @@
+/* Layout general */
+body, html {
+    height: 100%;
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background-color: #f0f4f3; /* Fondo suave verdoso */
+  }
+  
+  .layout {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  /* --- SIDEBAR MINTY --- */
+  .sidebar {
+    width: 260px;
+    background: #1a3c34; /* Verde oscuro elegante (Dark Slate) */
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+  }
+  
+  .sidebar-header i {
+    color: #78c2ad; /* Color primario de Minty */
+  }
+  
+  .sidebar-menu .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #a8dadc;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    margin-bottom: 0.25rem;
+  }
+  
+  .sidebar-menu .nav-link:hover,
+  .sidebar-menu .nav-link.active {
+    background: rgba(120, 194, 173, 0.2); /* Verde Minty transparente */
+    color: #ffffff;
+    transform: translateX(5px);
+  }
+  
+  .sidebar-menu .nav-link i {
+    width: 24px;
+    text-align: center;
+  }
+  
+  /* --- CONTENIDO PRINCIPAL --- */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  
+  .topbar {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .content {
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  /* --- ANIMACIONES --- */
+  
+  /* Animación de entrada suave hacia arriba */
+  .fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Efecto hover en Tarjetas */
+  .card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+  }
+  
+  /* Efecto hover en Botones */
+  .btn {
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border-radius: 8px;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  /* --- MEJORAS EN TABLAS (DataTables) --- */
+  .dataTables_wrapper .dataTables_filter input {
+    border-radius: 20px;
+    padding: 5px 15px;
+    border: 1px solid #ddd;
+  }
+  
+  .table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #78c2ad; /* Línea verde minty */
+    color: #1a3c34;
+    font-weight: 600;
+  }
+  
+  .page-item.active .page-link {
+    background-color: #78c2ad;
+    border-color: #78c2ad;
+  }

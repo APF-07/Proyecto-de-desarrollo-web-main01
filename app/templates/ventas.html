@@ -213,7 +213,12 @@
                                         <i class="bi bi-cart-plus me-1"></i> Vender
                                     </button>
                                     <a href="{{ url_for('main.editar_cliente', id=c.id) }}" class="btn btn-sm btn-light text-warning ms-1" title="Editar"><i class="bi bi-pencil"></i></a>
-                                    <a href="{{ url_for('main.eliminar_cliente', id=c.id) }}" class="btn btn-sm btn-light text-danger" title="Eliminar" onclick="return confirm('¿Eliminar cliente?')"><i class="bi bi-trash"></i></a>
+                                    
+                                    <a href="{{ url_for('main.eliminar_cliente', id=c.id) }}" 
+                                       class="btn btn-sm btn-light text-danger btn-eliminar-cliente" 
+                                       title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -423,5 +428,26 @@ function limpiarFormulario() {
 function generarBoletaPDF(id) {
     window.location.href = `/api/ventas/${id}/pdf/boleta`;
 }
+
+// --- AGREGADO: Lógica para alerta bonita al eliminar cliente ---
+$(document).on('click', '.btn-eliminar-cliente', function(e) {
+    e.preventDefault();
+    var url = $(this).attr('href');
+    
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Se eliminará este cliente permanentemente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+});
 </script>
 {% endblock %}

@@ -4,3 +4,7 @@ instance_class: F1
 
 env_variables:
   GEMINI_API_KEY: "AIzaSyCCSX4zgX7-SaG7uURMUg793A_VCzkbAB8"
+  INSTANCE_CONNECTION_NAME: "TU_ID_DE_PROYECTO:TU_REGION:TU_NOMBRE_DE_INSTANCIA"
+  DB_USER: "sqlserver"
+  DB_PASSWORD: "tu_password_de_sql_server"
+  DB_NAME: "INVENTARIO"

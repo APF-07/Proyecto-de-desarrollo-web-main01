@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">🤖 Asistente Inteligente de Inventario</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.inicio') }}">Inicio</a></li>
+        <li class="breadcrumb-item active">Asistente IA</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-robot me-1"></i> Consulta con Gemini sobre tu negocio
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="pregunta" class="form-label">¿Qué deseas consultar o analizar hoy?</label>
+                    <textarea class="form-control" id="pregunta" name="pregunta" rows="4" placeholder="Ej: ¿Qué recomendaciones me das para gestionar productos con bajo stock o mejorar las ventas en Cereal Sierra?" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Preguntar a la IA
+                </button>
+            </form>
+
+            {% if respuesta %}
+                <div class="card mt-4 bg-light border-success">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-lightbulb me-1"></i> Respuesta del Asistente:
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text" style="white-space: pre-line;">{{ respuesta }}</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

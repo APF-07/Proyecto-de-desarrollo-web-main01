@@ -56,16 +56,19 @@ def inicio():
 # ==========================
 # Listado de productos
 # ==========================
-@main_bp.route('/productos')
+# ==========================
+# Listado de productos
+# ==========================
+@main_bp.route('/productos', strict_slashes=False)
 @login_required
 def listar_productos():
     # Obtenemos productos Y categorías
     productos = models.obtener_productos()
-    categorias = models.obtener_categorias() # <--- AGREGAR ESTA LÍNEA
+    categorias = models.obtener_categorias()
     
     return render_template('productos.html', 
                          productos=productos, 
-                         categorias=categorias, # <--- PASARLAS AL TEMPLATE
+                         categorias=categorias,
                          page_title="Productos")
 
 # ==========================
@@ -199,16 +202,16 @@ def eliminar_proveedor(id):
 #   VENTAS
 # =====================================================
 
-@main_bp.route("/ventas")
+@main_bp.route("/ventas", strict_slashes=False)
 @login_required
 def listar_ventas():
     """Página principal de gestión de ventas y clientes"""
     clientes = models.obtener_clientes()
     ventas = models.obtener_ventas()
     return render_template("ventas.html", 
-                         clientes=clientes, 
-                         ventas=ventas, 
-                         page_title="Gestión de Ventas y Clientes")
+                           clientes=clientes, 
+                           ventas=ventas, 
+                           page_title="Gestión de Ventas y Clientes")
 
 @main_bp.route("/ventas/nueva", methods=["GET", "POST"])
 @login_required
@@ -722,3 +725,152 @@ def perfil():
         return redirect(url_for('main.perfil'))
 
     return render_template('perfil.html', page_title="Mi Perfil")
+# =====================================================
+#   ASISTENTE INTELIGENTE CON GEMINI API
+# =====================================================
+from google import genai
+
+def preguntar_a_gemini(pregunta):
+    try:
+        client = genai.Client(api_key="AIzaSyCCSX4zgX7-SaG7uURMUg793A_VCzkbAB8")
+        
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",  # <--- CAMBIA ESTO AQUÍ
+            contents=f"Eres un asistente experto en inventarios y ventas para 'Cereal Sierra'. Responde de forma útil y breve: {pregunta}"
+        )
+        return response.text
+    except Exception as e:
+        return f"Error al conectar con la IA: {str(e)}"
+
+@main_bp.route('/asistente-ia', methods=['GET', 'POST'], strict_slashes=False)
+@login_required
+def asistente_ia():
+    respuesta = None
+    if request.method == 'POST':
+        pregunta_usuario = request.form.get('pregunta')
+        if pregunta_usuario:
+            try:
+                # 1. Recopilamos absolutamente todo de la base de datos en tiempo real
+                total_productos = models.obtener_total_productos()
+                stock_bajos = models.obtener_productos_stock_bajo()
+                mas_vendidos = models.obtener_productos_mas_vendidos(10, None)
+                todos_los_productos = models.obtener_productos()
+                lista_clientes = models.obtener_clientes()
+                lista_proveedores = models.obtener_proveedores_todos()
+                lista_categorias = models.obtener_categorias_todas() # <--- ¡Nuevo! Obtenemos las categorías
+                
+                # 2. Construimos el contexto completo y actualizado
+                contexto_negocio = "--- RESUMEN ACTUAL Y COMPLETO DEL SISTEMA 'CEREAL SIERRA' ---\n"
+                contexto_negocio += f"- Total de productos en catálogo: {total_productos}\n"
+                
+                # Categorías registradas (¡NUEVO!)
+                contexto_negocio += "- Categorías de productos disponibles:\n"
+                if lista_categorias:
+                    for cat in lista_categorias:
+                        if isinstance(cat, dict):
+                            c_nombre = cat.get('nombre') or 'Sin nombre'
+                            c_desc = cat.get('descripcion', 'Sin descripción')
+                        else:
+                            c_nombre = getattr(cat, 'nombre', None) or 'Sin nombre'
+                            c_desc = getattr(cat, 'descripcion', 'Sin descripción')
+                        contexto_negocio += f"  * Categoría: {c_nombre} | Descripción: {c_desc}\n"
+                else:
+                    contexto_negocio += "  * No hay categorías registradas.\n"
+
+                # Alertas de stock bajo
+                contexto_negocio += "- Alertas de stock bajo:\n"
+                if stock_bajos:
+                    for p in stock_bajos:
+                        if isinstance(p, dict):
+                            nombre = p.get('nombre') or p.get('producto') or p.get('nombre_producto') or 'Desconocido'
+                            stock = p.get('stock', 0)
+                            minimo = p.get('stock_minimo', 0)
+                        else:
+                            nombre = getattr(p, 'nombre', None) or getattr(p, 'producto', None) or 'Desconocido'
+                            stock = getattr(p, 'stock', 0)
+                            minimo = getattr(p, 'stock_minimo', 0)
+                        contexto_negocio += f"  * Producto: {nombre} | Stock actual: {stock} | Stock mínimo requerido: {minimo}\n"
+                else:
+                    contexto_negocio += "  * No hay productos con stock bajo.\n"
+
+                # Productos más vendidos
+                contexto_negocio += "- Productos más vendidos (Histórico de ventas):\n"
+                if mas_vendidos:
+                    for p in mas_vendidos:
+                        if isinstance(p, dict):
+                            nombre = p.get('nombre') or p.get('producto') or p.get('nombre_producto') or 'Desconocido'
+                            total = p.get('total_vendido') or p.get('cantidad') or p.get('total') or '0'
+                        else:
+                            nombre = getattr(p, 'nombre', None) or getattr(p, 'producto', None) or 'Desconocido'
+                            total = getattr(p, 'total_vendido', None) or getattr(p, 'cantidad', None) or getattr(p, 'total', None) or '0'
+                        contexto_negocio += f"  * Producto: {nombre} -> Cantidad vendida: {total}\n"
+                else:
+                    contexto_negocio += "  * No hay registros de ventas detalladas aún.\n"
+
+                # Catálogo general de productos
+                contexto_negocio += "- Catálogo general de productos y precios:\n"
+                if todos_los_productos:
+                    for p in todos_los_productos:
+                        if isinstance(p, dict):
+                            nombre = p.get('nombre') or p.get('producto') or 'Desconocido'
+                            precio = p.get('precio', 0)
+                            stock = p.get('stock', 0)
+                            cat = p.get('categoria', 'General')
+                        else:
+                            nombre = getattr(p, 'nombre', None) or getattr(p, 'producto', None) or 'Desconocido'
+                            precio = getattr(p, 'precio', 0)
+                            stock = getattr(p, 'stock', 0)
+                            cat = getattr(p, 'categoria', 'General')
+                        contexto_negocio += f"  * [{cat}] {nombre} - Precio: S/. {precio} - Stock: {stock}\n"
+
+                # Listado de clientes
+                contexto_negocio += "- Clientes y empresas registradas:\n"
+                if lista_clientes:
+                    for c in lista_clientes:
+                        if isinstance(c, dict):
+                            nombre_cliente = c.get('nombre') or c.get('nombre_cliente') or 'Cliente sin nombre'
+                            telefono = c.get('telefono', 'Sin teléfono')
+                            correo = c.get('correo', 'Sin correo')
+                        else:
+                            nombre_cliente = getattr(c, 'nombre', None) or 'Cliente sin nombre'
+                            telefono = getattr(c, 'telefono', 'Sin teléfono')
+                            correo = getattr(c, 'correo', 'Sin correo')
+                        contexto_negocio += f"  * Cliente/Empresa: {nombre_cliente} | Teléfono: {telefono} | Correo: {correo}\n"
+                else:
+                    contexto_negocio += "  * No hay clientes registrados todavía.\n"
+
+                # Listado de proveedores
+                contexto_negocio += "- Proveedores registrados en el sistema:\n"
+                if lista_proveedores:
+                    for prov in lista_proveedores:
+                        if isinstance(prov, dict):
+                            p_nombre = prov.get('nombre') or 'Proveedor sin nombre'
+                            p_tipo = prov.get('tipo_producto', 'General')
+                            p_tel = prov.get('telefono', 'Sin teléfono')
+                            p_correo = prov.get('correo', 'Sin correo')
+                        else:
+                            p_nombre = getattr(prov, 'nombre', None) or 'Proveedor sin nombre'
+                            p_tipo = getattr(prov, 'tipo_producto', 'General')
+                            p_tel = getattr(prov, 'telefono', 'Sin teléfono')
+                            p_correo = getattr(prov, 'correo', 'Sin correo')
+                        contexto_negocio += f"  * Proveedor: {p_nombre} | Suministra/Tipo: {p_tipo} | Teléfono: {p_tel} | Correo: {p_correo}\n"
+                else:
+                    contexto_negocio += "  * No hay proveedores registrados todavía.\n"
+                
+                contexto_negocio += "------------------------------------------------------------------\n"
+
+            except Exception as db_error:
+                contexto_negocio = f"(Aviso al sistema: Hubo una incidencia menor al cargar los datos: {db_error})\n"
+
+            # 3. Prompt hacia la IA con todo el conocimiento del negocio
+            prompt_completo = f"""
+            {contexto_negocio}
+            
+            Instrucción: Eres el Gerente de Operaciones de 'Cereal Sierra'. Responde de forma clara y detallada a la pregunta del usuario utilizando la información completa de categorías, productos, ventas, clientes y proveedores provista arriba.
+            
+            Pregunta del usuario: {pregunta_usuario}
+            """
+            
+            respuesta = preguntar_a_gemini(prompt_completo)
+            
+    return render_template('asistente_ia.html', respuesta=respuesta, page_title="Asistente IA")

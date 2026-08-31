@@ -732,10 +732,11 @@ from google import genai
 
 def preguntar_a_gemini(pregunta):
     try:
-        client = genai.Client(api_key="AIzaSyCCSX4zgX7-SaG7uURMUg793A_VCzkbAB8")
+        # Lee la clave de forma segura desde Google Cloud
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
         
         response = client.models.generate_content(
-            model="gemini-3.6-flash",  # <--- CAMBIA ESTO AQUÍ
+            model="gemini-3.6-flash",
             contents=f"Eres un asistente experto en inventarios y ventas para 'Cereal Sierra'. Responde de forma útil y breve: {pregunta}"
         )
         return response.text
